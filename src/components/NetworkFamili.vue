@@ -11,21 +11,20 @@ const canvasElement = ref()
 
 onMounted(() => {
   const nodes = new DataSet([
-    { id: 1, label: 'Node 1' },
-    { id: 2, label: 'Node 2' },
-    { id: 3, label: 'Node 3' },
-    { id: 4, label: 'Node 4' },
-    { id: 5, label: 'Node 5' }
+    { id: 1, label: 'diamonds1', shape: 'image', image: './src/assets/1.jpg' },
+    { id: 2, label: 'diamonds2', shape: 'image', image: './src/assets/2.jpg' },
+    { id: 3, label: 'diamonds3', shape: 'image', image: './src/assets/1.jpg' },
+    { id: 4, label: 'diamonds4', shape: 'image', image: './src/assets/1.jpg' },
+    { id: 5, label: 'diamonds5', shape: 'image', image: './src/assets/1.jpg' }
   ])
 
   // create an array with edges
-  const edges = new DataSet([
-    { from: 1, to: 3 },
+  var edges = [
     { from: 1, to: 2 },
-    { from: 2, to: 4 },
-    { from: 4, to: 4 },
-    { from: 3, to: 5 }
-  ])
+    { from: 2, to: 1 },
+    { from: 2, to: 3 },
+    { from: 2, to: 4 }
+  ]
 
   // create a network
   const container = document.getElementById('mynetwork')
@@ -33,13 +32,23 @@ onMounted(() => {
     nodes: nodes,
     edges: edges
   }
-  var options = {
+  let options = {
+    physics: {
+      enabled: false
+    },
+    interaction: {
+      dragNodes: false
+    },
     layout: {
       hierarchical: {
         direction: 'UD'
       }
+    },
+    edges: {
+      color: '#000'
     }
   }
+
   const network = new Network(container, data, options)
 })
 </script>
