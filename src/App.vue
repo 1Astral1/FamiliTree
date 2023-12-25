@@ -1,9 +1,9 @@
 <template>
     <div class="wrapper">
-        <NetworkFamili />
+        <FamilyTree />
     </div>
 </template>
 
 <script setup>
-    import NetworkFamili from './components/NetworkFamili.vue'
+    import FamilyTree from '@/components/FamilyTree.vue';
 </script>
