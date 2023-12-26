@@ -140,6 +140,62 @@
             childs: string[];
         }[] = [];
 
+        // persons.forEach((person) => {
+        //     nodes.push({
+        //         id: person.id,
+        //         label: person.fullName,
+        //         shape: 'image',
+        //         image: person.sex === 'm' ? manPictureSrc : womanPictureSrc,
+        //         level: 0
+        //     });
+        // });
+
+        // relations.forEach((relation) => {
+        //     if (relation.husband && relation.wife) {
+        //         edges.push({
+        //             id: `${relation.husband}-${relation.wife}-HUSBAND-WIFE`,
+        //             from: relation.husband,
+        //             to: relation.wife
+        //         });
+
+        //         edges.push({
+        //             id: `${relation.wife}-${relation.husband}-WIFE-HUSBAND`,
+        //             from: relation.wife,
+        //             to: relation.husband
+        //         });
+        //     }
+
+        //     relation.children.forEach((child) => {
+        //         if (relation.husband) {
+        //             edges.push({
+        //                 id: `${relation.husband}-${child}-HUSBAND-CHILD`,
+        //                 from: relation.husband,
+        //                 to: child
+        //             });
+
+        //             edges.push({
+        //                 id: `${child}-${relation.husband}-CHILD-HUSBAND`,
+        //                 from: child,
+        //                 to: relation.husband
+        //             });
+        //         }
+
+        //         if (relation.wife) {
+        //             edges.push({
+        //                 id: `${relation.wife}-${child}-WIFE-CHILD`,
+        //                 from: relation.wife,
+        //                 to: child
+        //             });
+
+        //             edges.push({
+        //                 id: `${child}-${relation.wife}-CHILD-WIFE`,
+        //                 from: child,
+        //                 to: relation.wife
+        //             });
+        //         }
+        //     });
+        // });
+
         function recursivePersonAdd(person: Person, level: number = 0, parentRelationId?: string) {
             if (level > 500) {
                 return;
