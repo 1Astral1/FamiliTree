@@ -8,12 +8,13 @@
 </template>
 
 <script setup lang="ts">
-    import vis from 'vis';
+    import { Network, DataSet } from 'vis-network/standalone';
     import { Person, PersonFactory } from '@/models/Person';
     import { Relation, RelationFactory } from '@/models/Relation';
     import { onMounted, ref } from 'vue';
     import { tree } from '@/tree.js';
     import { manPictureSrc, womanPictureSrc } from '@/core/constants';
+    import randomString from '@/utils/randomString';
 
     const canvasElement = ref<HTMLDivElement | null>(null);
 
@@ -31,6 +32,7 @@
 
         const orphans: { generationCount: number; person: Person }[] = [];
 
+        // Ищем всех крайних членов семьи
         persons.forEach((person) => {
             let isOrphan: boolean = true;
 
@@ -42,7 +44,7 @@
                 }
 
                 const isPersonIsChild = !!relation.children.find(
-                    (childId) => childId === person.id
+                    (childId) => childId === person.id,
                 );
 
                 if (isPersonIsChild === true) {
@@ -110,29 +112,41 @@
 
             orphans.push({
                 generationCount: generationCount,
-                person: person
+                person: person,
             });
         });
 
+        // Сортируем по длине поколений
         orphans.sort((a, b) => b.generationCount - a.generationCount);
 
+        // Самый крайний предок
         const ancestor = orphans.at(0)!.person;
 
-        const nodes: {
-            id: string;
-            label: string;
-            shape: 'image';
-            image: string;
-            level: number;
-        }[] = [];
+        //
 
-        // create an array with edges
-        const edges: {
-            id: string;
-            from: string;
-            to: string;
-        }[] = [];
+        // Создаем переменную узлов
+        const nodes = new DataSet<
+            {
+                id: string;
+                label: string;
+                shape: 'image';
+                image: string;
+                level: number;
+            },
+            'id'
+        >();
 
+        // Создаем переменную связей
+        const edges = new DataSet<
+            {
+                id: string;
+                from: string;
+                to: string;
+            },
+            'id'
+        >();
+
+        // Создаем переменную семей
         const families: {
             dad: string;
             mom: string;
@@ -140,71 +154,21 @@
             childs: string[];
         }[] = [];
 
-        // persons.forEach((person) => {
-        //     nodes.push({
-        //         id: person.id,
-        //         label: person.fullName,
-        //         shape: 'image',
-        //         image: person.sex === 'm' ? manPictureSrc : womanPictureSrc,
-        //         level: 0
-        //     });
-        // });
+        nodes.add({
+            id: ancestor.id,
+            label: ancestor.fullName,
+            shape: 'image',
+            image: ancestor.sex === 'm' ? manPictureSrc : womanPictureSrc,
+            level: 0,
+        });
 
-        // relations.forEach((relation) => {
-        //     if (relation.husband && relation.wife) {
-        //         edges.push({
-        //             id: `${relation.husband}-${relation.wife}-HUSBAND-WIFE`,
-        //             from: relation.husband,
-        //             to: relation.wife
-        //         });
+        crawlFromPerson(ancestor, 0);
 
-        //         edges.push({
-        //             id: `${relation.wife}-${relation.husband}-WIFE-HUSBAND`,
-        //             from: relation.wife,
-        //             to: relation.husband
-        //         });
-        //     }
-
-        //     relation.children.forEach((child) => {
-        //         if (relation.husband) {
-        //             edges.push({
-        //                 id: `${relation.husband}-${child}-HUSBAND-CHILD`,
-        //                 from: relation.husband,
-        //                 to: child
-        //             });
-
-        //             edges.push({
-        //                 id: `${child}-${relation.husband}-CHILD-HUSBAND`,
-        //                 from: child,
-        //                 to: relation.husband
-        //             });
-        //         }
-
-        //         if (relation.wife) {
-        //             edges.push({
-        //                 id: `${relation.wife}-${child}-WIFE-CHILD`,
-        //                 from: relation.wife,
-        //                 to: child
-        //             });
-
-        //             edges.push({
-        //                 id: `${child}-${relation.wife}-CHILD-WIFE`,
-        //                 from: child,
-        //                 to: relation.wife
-        //             });
-        //         }
-        //     });
-        // });
-
-        function recursivePersonAdd(person: Person, level: number = 0, parentRelationId?: string) {
-            if (level > 500) {
-                return;
-            }
+        function crawlFromPerson(person: Person, level: number) {
+            let curLevel = level;
 
             person.relationsIds.forEach((relationId) => {
-                if (relationId === parentRelationId) {
-                    return;
-                }
+                curLevel = level;
 
                 const relation = relations.find((r) => r.id === relationId);
 
@@ -212,108 +176,135 @@
                     return;
                 }
 
-                const husband = persons.find((p) => p.id === relation.husband);
-                const wife = persons.find((p) => p.id === relation.wife);
+                // Relation, в котором человек выступает ребенком, обрабатываем отдельно
+                if (relation.children.findIndex((childId) => childId === person.id) !== -1) {
+                    curLevel -= 1;
 
-                const children: Person[] = [];
+                    return;
+                }
+
+                let isPersonHusband = false;
+
+                const husbandId = relation.husband;
+                const wifeId = relation.wife;
+
+                if (husbandId === person.id) {
+                    isPersonHusband = true;
+                }
+
+                const husband: Person = husbandId
+                    ? persons.find((p) => p.id === husbandId)
+                    : { id: `${person.id}-FANTOM`, fullName: '', sex: 'm', relationsIds: [] };
+
+                const wife: Person = wifeId
+                    ? persons.find((p) => p.id === wifeId)
+                    : { id: `${person.id}-FANTOM`, fullName: '', sex: 'f', relationsIds: [] };
+
+                if (nodes.get(husband.id) === null) {
+                    nodes.add({
+                        id: husband.id,
+                        label: husband.fullName,
+                        shape: 'image',
+                        image: manPictureSrc,
+                        level: curLevel,
+                    });
+                }
+
+                if (nodes.get(wife.id) === null) {
+                    nodes.add({
+                        id: wife.id,
+                        label: wife.fullName,
+                        image: womanPictureSrc,
+                        level: curLevel,
+                        shape: 'image',
+                    });
+                }
+
+                if (
+                    (isPersonHusband ? wife.relationsIds.length : husband.relationsIds.length) > 1
+                ) {
+                    crawlFromPerson(isPersonHusband ? wife : husband, curLevel);
+                }
+
+                if (edges.get(`${husband.id}-${wife.id}-HUSBAND-WIFE`) === null) {
+                    edges.add({
+                        id: `${husband.id}-${wife.id}-HUSBAND-WIFE`,
+                        from: husband.id,
+                        to: wife.id,
+                    });
+                }
 
                 relation.children.forEach((childId) => {
-                    const person = persons.find((p) => p.id === childId);
+                    const child = persons.find((p) => p.id === childId);
 
-                    if (!person) {
+                    if (!child) {
                         return;
                     }
 
-                    children.push(person);
-                });
-
-                if (husband) {
-                    if (nodes.find((n) => n.id === husband.id) === undefined) {
-                        nodes.push({
-                            id: husband.id,
-                            label: husband.fullName,
-                            shape: 'image',
-                            image: manPictureSrc,
-                            level: level
-                        });
-                    }
-                }
-
-                if (wife) {
-                    if (nodes.find((n) => n.id === wife.id) === undefined) {
-                        nodes.push({
-                            id: wife.id,
-                            label: wife.fullName,
-                            shape: 'image',
-                            image: womanPictureSrc,
-                            level: level
-                        });
-                    }
-                }
-
-                if (husband && wife) {
-                    edges.push({
-                        id: `${husband.id}-${wife.id}-HUSBAND-WIFE`,
-                        from: husband.id,
-                        to: wife.id
-                    });
-
-                    edges.push({
-                        id: `${wife.id}-${husband.id}-WIFE-HUSBAND`,
-                        from: wife.id,
-                        to: husband.id
-                    });
-                }
-
-                children.forEach((child) => {
-                    if (nodes.find((n) => n.id === child.id) === undefined) {
-                        nodes.push({
+                    if (nodes.get(child.id) === null) {
+                        nodes.add({
                             id: child.id,
                             label: child.fullName,
                             shape: 'image',
                             image: child.sex === 'm' ? manPictureSrc : womanPictureSrc,
-                            level: level + 1
+                            level: curLevel + 1,
                         });
                     }
 
-                    if (husband) {
-                        edges.push({
-                            id: `${husband.id}-${child.id}-HUSBAND-CHILD`,
+                    if (edges.get(`${husband.id}-${child.id}-FATHER-CHILD`) === null) {
+                        edges.add({
+                            id: `${husband.id}-${child.id}-FATHER-CHILD`,
                             from: husband.id,
-                            to: child.id
+                            to: child.id,
                         });
                     }
 
-                    recursivePersonAdd(child, level + 1, relation.id);
+                    if (edges.get(`${wife.id}-${child.id}-MOTHER-CHILD`) === null) {
+                        edges.add({
+                            id: `${wife.id}-${child.id}-MOTHER-CHILD`,
+                            from: wife.id,
+                            to: child.id,
+                        });
+                    }
+
+                    if (child.relationsIds.length > 1) {
+                        crawlFromPerson(child, curLevel + 1);
+                    }
+                });
+
+                families.push({
+                    dad: husband.id,
+                    mom: wife.id,
+                    childs: relation.children,
+                    ofst: 0,
                 });
             });
         }
 
-        recursivePersonAdd(ancestor);
-
-        // create a network
-        const network = new vis.Network(
+        //
+        const network = new Network(
             canvasElement.value!,
             {
                 nodes: nodes,
-                edges: edges
+                edges: edges,
             },
             {
                 physics: {
-                    enabled: false
+                    enabled: false,
                 },
                 interaction: {
-                    dragNodes: false
+                    dragNodes: false,
                 },
                 layout: {
                     hierarchical: {
-                        direction: 'UD'
-                    }
+                        direction: 'UD',
+                        nodeSpacing: 300,
+                    },
                 },
                 edges: {
-                    color: 'transparent'
-                }
-            }
+                    color: 'transparent',
+                },
+            },
         );
 
         network.on('beforeDrawing', function (ctx) {

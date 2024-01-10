@@ -4,7 +4,7 @@
     "tabWidth": 4,
     "singleQuote": true,
     "printWidth": 100,
-    "trailingComma": "none",
+    "trailingComma": "all",
     "vueIndentScriptAndStyle": true,
     "singleAttributePerLine": true
 }
