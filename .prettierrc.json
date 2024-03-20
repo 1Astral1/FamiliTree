@@ -6,5 +6,7 @@
     "printWidth": 100,
     "trailingComma": "all",
     "vueIndentScriptAndStyle": true,
-    "singleAttributePerLine": true
+    "singleAttributePerLine": true,
+    "plugins": ["prettier-plugin-tailwindcss"],
+    "tailwindConfig": "./tailwind.config.js"
 }

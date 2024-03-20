@@ -11,6 +11,7 @@
     },
     "dependencies": {
         "gedcom": "^3.0.0",
+        "prettier-plugin-tailwindcss": "^0.5.11",
         "vis": "^4.8.1",
         "vis-network": "^9.1.9",
         "vue": "^3.3.4"

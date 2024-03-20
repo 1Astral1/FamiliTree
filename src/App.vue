@@ -1,9 +1,5 @@
 <template>
-    <div class="wrapper">
-        <FamilyTree />
-    </div>
+    <div></div>
 </template>
 
-<script setup>
-    import FamilyTree from '@/components/FamilyTree.vue';
-</script>
+<script setup></script>
